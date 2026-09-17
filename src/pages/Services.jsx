@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { theme, fadeInUp } from '../styles/theme';
-import api from '../services/api';
 
 const ServicesContainer = styled.div`
   max-width: 1200px;
@@ -177,42 +176,42 @@ const sampleServices = [
   {
     id: 1,
     name: 'Manicura Clásica',
-    description: 'Servicio completo de manicura que incluye limado, pulido y esmaltado para unas manos perfectamente cuidadas y elegantes.',
+    description: 'Cuidado completo de uñas con esmalte de alta calidad',
     price: '$30.000',
     image: '/images/services/manicura_clasica.jpg'
   },
   {
     id: 2,
-    name: 'Tintura de Cabello',
-    description: 'Coloración profesional con productos de alta calidad para un color vibrante, uniforme y de larga duración en tu cabello.',
+    name: 'Tintura',
+    description: 'Coloración profesional con productos premium',
     price: '$150.000',
     image: '/images/services/tintura.webp'
   },
   {
     id: 3,
     name: 'Tratamiento Capilar',
-    description: 'Tratamiento nutritivo e hidratante para restaurar la salud, brillo y suavidad de tu cabello dañado o reseco.',
+    description: 'Tratamiento profundo para revitalizar tu cabello',
     price: '$60.000',
     image: '/images/services/tratamiento_capilar.webp'
   },
   {
     id: 4,
-    name: 'Corte para Dama',
-    description: 'Corte de cabello profesional para mujer, adaptado a tu tipo de rostro y estilo personal con acabado impecable.',
+    name: 'Corte de Cabello',
+    description: 'Corte profesional según tu estilo preferido',
     price: '$35.000',
     image: '/images/services/corte_dama.jpg'
   },
   {
     id: 5,
-    name: 'Peinado para Evento',
-    description: 'Peinados elegantes y creativos para bodas, graduaciones y eventos especiales que te harán lucir espectacular.',
+    name: 'Peinado de Evento',
+    description: 'Peinado elegante para ocasiones especiales',
     price: '$200.000',
     image: '/images/services/peinado_evento.jpg'
   },
   {
     id: 6,
-    name: 'Pedicure Completo',
-    description: 'Tratamiento completo de pedicure con exfoliación, hidratación y esmaltado para unos pies suaves y perfectos.',
+    name: 'Pedicure',
+    description: 'Pedicure profesional para cuidar, hidratar y embellecer tus pies',
     price: '$70.000',
     image: '/images/services/pedicure.jpg'
   },
@@ -223,13 +222,13 @@ function Services() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/services')
-      .then(response => {
-        setServices(response.data);
-      })
-      .catch(error => {
-        console.error("Error al obtener los servicios del backend:", error);
-      });
+    const storedServices = localStorage.getItem('services');
+    if (!storedServices) {
+      localStorage.setItem('services', JSON.stringify(sampleServices));
+      setServices(sampleServices);
+    } else {
+      setServices(JSON.parse(storedServices));
+    }
   }, []);
 
   const handleBook = (serviceName) => {

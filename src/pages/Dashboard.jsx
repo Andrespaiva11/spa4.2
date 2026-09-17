@@ -141,7 +141,7 @@ function Dashboard({ user }) {
       
       <WelcomeCard>
         <h2>Hola, {user?.fullName || user?.username} 👋</h2>
-        <p>Bienvenido de vuelta a María Bonita. ¿Qué te gustaría hacer hoy?</p>
+        <p>Bienvenido de vuelta a Essence De Toi. ¿Qué te gustaría hacer hoy?</p>
       </WelcomeCard>
 
       <CardGrid>

@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '../styles/theme';
-import api from '../services/api';
-
 
 // Animations
 const slideUp = keyframes`
@@ -78,7 +76,7 @@ const BookButton = styled(Link)`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 2rem;
 
   @media (max-width: 480px) {
@@ -317,15 +315,14 @@ function MyAppointments({ user }) {
   const [selectedAppId, setSelectedAppId] = useState(null);
 
   useEffect(() => {
-    api.get('/appointments')
-      .then(response => {
-        // Ordenar citas por fecha descendente
-        const sorted = response.data.sort((a, b) => new Date(a.date) - new Date(b.date));
-        setAppointments(sorted);
-      })
-      .catch(err => {
-        console.error("Error al obtener las citas:", err);
-      });
+    // Cargar citas desde localStorage para el usuario actual
+    const allAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+    const userAppointments = allAppointments.filter(
+      app => app.username === user?.username
+    );
+    // Ordenar citas por fecha descendente
+    userAppointments.sort((a, b) => new Date(a.date) - new Date(b.date));
+    setAppointments(userAppointments);
   }, [user]);
 
   const openCancelModal = (id) => {
@@ -336,15 +333,15 @@ function MyAppointments({ user }) {
   const handleCancelAppointment = () => {
     if (!selectedAppId) return;
 
-    api.put(`/appointments/${selectedAppId}/status`, { status: 'CANCELLED' })
-      .then(() => {
-        setAppointments(prev => prev.map(app => app.id === selectedAppId ? { ...app, status: 'CANCELLED' } : app));
-        setModalOpen(false);
-        setSelectedAppId(null);
-      })
-      .catch(err => {
-        console.error("Error al cancelar la cita:", err);
-      });
+    const allAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+    // Eliminar la cita correspondiente
+    const updatedAppointments = allAppointments.filter(app => app.id !== selectedAppId);
+    localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
+
+    // Actualizar el estado local
+    setAppointments(prev => prev.filter(app => app.id !== selectedAppId));
+    setModalOpen(false);
+    setSelectedAppId(null);
   };
 
   // Formatear fecha de YYYY-MM-DD a formato más legible
@@ -364,7 +361,7 @@ function MyAppointments({ user }) {
       <HeaderSection>
         <TitleGroup>
           <Title>Mis Citas</Title>
-          <Subtitle>Consulta y administra tus citas programadas en María Bonita</Subtitle>
+          <Subtitle>Consulta y administra tus citas programadas en Essence De Toi</Subtitle>
         </TitleGroup>
         <BookButton to="/appointments/new">
           <i className="fas fa-plus-circle"></i> Nueva Cita
@@ -375,7 +372,7 @@ function MyAppointments({ user }) {
         <EmptyState>
           <EmptyIcon>📅</EmptyIcon>
           <EmptyTitle>No tienes citas agendadas</EmptyTitle>
-          <EmptyText>Reserva tu cita de maquillaje hoy mismo y disfruta de una experiencia premium con nosotros.</EmptyText>
+          <EmptyText>Reserva tu momento de bienestar hoy mismo y disfruta de una experiencia premium en nuestro spa.</EmptyText>
           <BookButton to="/appointments/new">
             <i className="fas fa-calendar-alt"></i> Agendar Cita Ahora
           </BookButton>
@@ -387,9 +384,7 @@ function MyAppointments({ user }) {
               <div>
                 <CardHeader>
                   <ServiceName>{app.service}</ServiceName>
-                  <StatusBadge $cancelled={app.status === 'CANCELLED'}>
-                    {app.status === 'CANCELLED' ? 'Cancelada' : 'Confirmada'}
-                  </StatusBadge>
+                  <StatusBadge>Confirmada</StatusBadge>
                 </CardHeader>
 
                 <CardBody>
@@ -410,13 +405,11 @@ function MyAppointments({ user }) {
                 </CardBody>
               </div>
 
-              {app.status !== 'CANCELLED' && (
-                <CardFooter>
-                  <CancelBtn onClick={() => openCancelModal(app.id)}>
-                    Cancelar Cita
-                  </CancelBtn>
-                </CardFooter>
-              )}
+              <CardFooter>
+                <CancelBtn onClick={() => openCancelModal(app.id)}>
+                  Cancelar Cita
+                </CancelBtn>
+              </CardFooter>
             </AppointmentCard>
           ))}
         </Grid>

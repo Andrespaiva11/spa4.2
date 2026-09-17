@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '../../styles/theme';
-import api from '../../services/api';
-
+import { useAuth } from '../../contexts/AuthContext';
 
 // Animations
 const slideUp = keyframes`
@@ -301,9 +300,10 @@ const SubmitBtn = styled.button`
 `;
 
 function ManageUsers() {
+  const { PREDEFINED_USERS } = useAuth();
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  
   const [newUser, setNewUser] = useState({
     username: '',
     fullName: '',
@@ -312,39 +312,35 @@ function ManageUsers() {
   });
 
   useEffect(() => {
-    api.get('/users')
-      .then(response => {
-        setUsers(response.data);
-      })
-      .catch(err => {
-        console.error("Error al obtener los usuarios del backend:", err);
-      });
-  }, []);
+    const storedUsers = localStorage.getItem('users');
+    if (!storedUsers) {
+      localStorage.setItem('users', JSON.stringify(PREDEFINED_USERS));
+      setUsers(PREDEFINED_USERS);
+    } else {
+      setUsers(JSON.parse(storedUsers));
+    }
+  }, [PREDEFINED_USERS]);
 
-  const handleRoleChange = (id, username, currentRole) => {
-    const roleCycle = { 'CLIENT': 'STYLIST', 'STYLIST': 'ADMIN', 'ADMIN': 'CLIENT' };
-    const nextRole = roleCycle[currentRole];
-    
-    api.put(`/users/${id}`, { role: nextRole })
-      .then(response => {
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, role: response.data.role } : u));
-      })
-      .catch(err => {
-        console.error("Error al cambiar rol del usuario:", err);
-        alert("Error al cambiar rol del usuario");
-      });
+  const saveUsers = (updatedList) => {
+    localStorage.setItem('users', JSON.stringify(updatedList));
+    setUsers(updatedList);
   };
 
-  const handleDeleteUser = (id, username) => {
+  const handleRoleChange = (username) => {
+    const roleCycle = { 'CLIENT': 'STYLIST', 'STYLIST': 'ADMIN', 'ADMIN': 'CLIENT' };
+    const updated = users.map(user => {
+      if (user.username === username) {
+        return { ...user, role: roleCycle[user.role] };
+      }
+      return user;
+    });
+    saveUsers(updated);
+  };
+
+  const handleDeleteUser = (username) => {
     if (window.confirm(`¿Estás seguro de que deseas eliminar al usuario @${username}?`)) {
-      api.delete(`/users/${id}`)
-        .then(() => {
-          setUsers(prev => prev.filter(u => u.id !== id));
-        })
-        .catch(err => {
-          console.error("Error al eliminar al usuario:", err);
-          alert("Error al eliminar al usuario");
-        });
+      const updated = users.filter(user => user.username !== username);
+      saveUsers(updated);
     }
   };
 
@@ -354,38 +350,10 @@ function ManageUsers() {
       alert('El nombre de usuario ya existe');
       return;
     }
-    const defaultPassword = newUser.username + '123';
-    
-    api.post('/auth/register', {
-      username: newUser.username,
-      fullName: newUser.fullName,
-      email: newUser.email,
-      role: newUser.role,
-      password: defaultPassword
-    })
-      .then(response => {
-        // En lugar de sobreescribir la sesión actual (ya que register devuelve token y actualiza contexto en cliente),
-        // en este panel de admin queremos agregar el nuevo usuario creado a la lista local.
-        // El endpoint /auth/register devuelve el usuario creado.
-        // Pero para prevenir que la sesión de admin se sobrescriba al registrar desde aquí,
-        // necesitamos asegurarnos de que la llamada no re-guarde el token del nuevo usuario en localStorage si el que registra es un admin.
-        // Espera, nuestro AuthContext.jsx register guarda el token. Pero aquí en ManageUsers estamos llamando directamente a `api.post('/auth/register')`.
-        // Como llamamos a `api.post` directamente (y no al `register` del AuthContext), el token en localStorage NO se sobrescribirá a menos que lo hagamos explícitamente!
-        // Esto es perfecto. La sesión de administrador se mantiene intacta.
-        const createdUser = response.data.user;
-        // La API devuelve { token, user: { username, fullName, email, role } }
-        // Agregamos la propiedad 'id' al usuario local
-        setUsers(prev => [...prev, { id: response.data.id || Date.now(), ...createdUser }]);
-        alert(`Usuario creado exitosamente. La contraseña temporal es: ${defaultPassword}`);
-        setIsModalOpen(false);
-        setNewUser({ username: '', fullName: '', email: '', role: 'CLIENT' });
-        // Recargar la lista de usuarios para obtener los ids correctos de la base de datos
-        api.get('/users').then(res => setUsers(res.data));
-      })
-      .catch(err => {
-        console.error("Error al crear usuario:", err);
-        alert(err.response?.data?.error || "Error al crear el usuario");
-      });
+    const updated = [...users, newUser];
+    saveUsers(updated);
+    setIsModalOpen(false);
+    setNewUser({ username: '', fullName: '', email: '', role: 'CLIENT' });
   };
 
   const getInitials = (name) => {
@@ -434,10 +402,10 @@ function ManageUsers() {
                   </Td>
                   <Td>
                     <ActionGroup>
-                      <MiniBtn onClick={() => handleRoleChange(u.id, u.username, u.role)}>
+                      <MiniBtn onClick={() => handleRoleChange(u.username)}>
                         Cambiar Rol
                       </MiniBtn>
-                      <MiniBtn $danger onClick={() => handleDeleteUser(u.id, u.username)}>
+                      <MiniBtn $danger onClick={() => handleDeleteUser(u.username)}>
                         <i className="fas fa-trash-alt"></i>
                       </MiniBtn>
                     </ActionGroup>
@@ -460,7 +428,7 @@ function ManageUsers() {
                   type="text"
                   id="fullName"
                   value={newUser.fullName}
-                  onChange={e => setNewUser({ ...newUser, fullName: e.target.value.replace(/[0-9]/g, '') })}
+                  onChange={e => setNewUser({ ...newUser, fullName: e.target.value })}
                   placeholder="Ej. Juan Pérez"
                   required
                 />

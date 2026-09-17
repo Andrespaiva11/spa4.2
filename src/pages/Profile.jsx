@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '../styles/theme';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
-
 
 // Animations
 const fadeInUp = keyframes`
@@ -307,8 +305,8 @@ const Alert = styled.div`
 `;
 
 function Profile() {
-  const { user, setUser } = useAuth();
-
+  const { user } = useAuth();
+  
   // Local state initialized with user info
   const [formData, setFormData] = useState({
     fullName: '',
@@ -340,11 +338,7 @@ function Profile() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    let val = value;
-    if (name === 'fullName') {
-      val = value.replace(/[0-9]/g, '');
-    }
-    setFormData(prev => ({ ...prev, [name]: val }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleEditClick = (e) => {
@@ -371,54 +365,43 @@ function Profile() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-
-    if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
-      alert("Las nuevas contraseñas no coinciden");
-      return;
-    }
-
     setIsSaving(true);
 
-    try {
-      const payload = {
+    // Simulate network save latency
+    await new Promise(r => setTimeout(r, 1200));
+
+    // Si el usuario cambia los campos, guardamos de forma simulada en localStorage
+    if (user) {
+      const updatedUser = {
+        ...user,
         fullName: formData.fullName,
         email: formData.email
       };
-
-      if (formData.currentPassword && formData.newPassword) {
-        payload.password = formData.newPassword;
-      }
-
-      const response = await api.put('/auth/profile', payload);
-      const { token, user: updatedUser } = response.data;
-
-      // Actualizar localStorage y contexto
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-
-      setIsEditing(false);
-      setAlertMessage('¡Tu información de perfil ha sido actualizada con éxito!');
-      setShowAlert(true);
-    } catch (error) {
-      console.error("Error al guardar perfil:", error);
-      alert(error.response?.data?.error || "Error al actualizar el perfil.");
-    } finally {
-      setIsSaving(false);
       
-      // Clear password inputs
-      setFormData(prev => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }));
-
-      // Auto dismiss notification after 4s
-      setTimeout(() => {
-        setShowAlert(false);
-      }, 4000);
+      // Persistir de forma simulada en localStorage para persistencia básica
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Nota: Para actualizar el context en caliente sin recargar se requeriría una función expuesta,
+      // pero actualizando localStorage logramos que persista en refrescos y navegación!
     }
+
+    setIsSaving(false);
+    setIsEditing(false);
+    setAlertMessage('¡Tu información de perfil ha sido actualizada con éxito!');
+    setShowAlert(true);
+
+    // Clear password inputs
+    setFormData(prev => ({
+      ...prev,
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }));
+
+    // Auto dismiss notification after 4s
+    setTimeout(() => {
+      setShowAlert(false);
+    }, 4000);
   };
 
   // Get initials for profile badge
@@ -444,7 +427,7 @@ function Profile() {
   return (
     <ProfileWrapper>
       <ProfileCard>
-
+        
         {/* Sidebar */}
         <ProfileSidebar>
           <AvatarContainer>

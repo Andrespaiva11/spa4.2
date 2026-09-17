@@ -160,19 +160,19 @@ const Indicator = styled.button`
 const services = [
   {
     id: 1,
-    name: 'Maquillaje Social de Día',
-    description: 'Un maquillaje fresco, natural y elegante ideal para eventos de día, graduaciones o reuniones.',
+    name: 'Manicura Clásica',
+    description: 'Cuidado completo de uñas con esmalte de alta calidad',
     image: '/images/services/manicura_clasica.jpg'
   },
   {
     id: 2,
-    name: 'Maquillaje de Novia & Gala',
-    description: 'Maquillaje premium de alta duración con técnicas de contorneado y acabado perfecto para tu gran día.',
+    name: 'Tintura',
+    description: 'Coloración profesional con productos premium',
     image: '/images/services/tintura.webp'
   },
   {
     id: 3,
-    name: 'Ver Todos los Servicios',
+    name: 'Ver Todos',
     description: '',
     image: '/images/services/tratamiento_capilar.webp',
     isButton: true

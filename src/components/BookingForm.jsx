@@ -3,9 +3,6 @@ import { useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { theme, fadeInUp } from '../styles/theme';
 import { useAuth } from '../contexts/AuthContext';
-import { generateAppointmentPDF, downloadBlob } from '../services/pdfService';
-import api from '../services/api';
-
 
 /* ─── Animations ─────────────────────────────────────────── */
 const shimmer = keyframes`
@@ -298,59 +295,15 @@ const BackButton = styled.button`
   }
 `;
 
-const DownloadPdfButton = styled.button`
-  margin-top: 1rem;
-  background: linear-gradient(135deg, ${theme.colors.primaryDark} 0%, ${theme.colors.accent} 50%, ${theme.colors.navbarLinkHover} 100%);
-  background-size: 200% auto;
-  color: #fff;
-  padding: 0.85rem 2rem;
-  border-radius: 50px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  cursor: pointer;
-  border: none;
-  transition: all 0.35s ease;
-  box-shadow: 0 4px 20px rgba(153,101,21,0.35);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-
-  &:hover:not(:disabled) {
-    background-position: right center;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 30px rgba(201,148,42,0.5);
-  }
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-`;
-
-const PdfStatusText = styled.p`
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
-  color: ${props => props.$error ? theme.colors.danger : 'rgba(255,255,255,0.45)'};
-`;
-
-const ButtonsRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-`;
-
 /* ─── Data ───────────────────────────────────────────────── */
 // Fallback services in case localStorage is empty
 const DEFAULT_SERVICES = [
-  'Maquillaje Social de Día',
-  'Maquillaje de Novia & Gala',
-  'Perfilado y Diseño de Cejas',
-  'Curso de Automaquillaje Express',
-  'Maquillaje Editorial & de Moda',
-  'Lifting de Pestañas & Laminado',
+  'Manicura Clásica',
+  'Tintura',
+  'Tratamiento Capilar',
+  'Corte de Cabello',
+  'Peinado de Evento',
+  'Pedicure',
 ];
 
 const TIME_SLOTS = [
@@ -371,21 +324,20 @@ function BookingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess]       = useState(false);
   const [availableServices, setAvailableServices] = useState(DEFAULT_SERVICES);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfStatus, setPdfStatus]   = useState('');
-  const [pdfError, setPdfError]     = useState(false);
 
-  // Load services from backend
+  // Load services from localStorage to stay in sync with admin panel
   useEffect(() => {
-    api.get('/services')
-      .then(response => {
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          setAvailableServices(response.data.map(s => s.name));
+    const stored = localStorage.getItem('services');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAvailableServices(parsed.map(s => s.name));
         }
-      })
-      .catch(err => {
-        console.error('Error cargando servicios del backend:', err);
-      });
+      } catch {
+        // silently fall back to defaults
+      }
+    }
   }, []);
 
   const validate = () => {
@@ -393,23 +345,7 @@ function BookingForm() {
     if (!formData.service) e.service = 'Selecciona un servicio';
     if (!formData.date)    e.date    = 'La fecha es requerida';
     else if (formData.date < today) e.date = 'La fecha no puede ser en el pasado';
-    
-    if (!formData.time) {
-      e.time = 'Selecciona una hora';
-    } else if (formData.date === today) {
-      const [timeStr, modifier] = formData.time.split(' ');
-      let [hours, minutes] = timeStr.split(':').map(Number);
-      if (modifier === 'PM' && hours < 12) hours += 12;
-      if (modifier === 'AM' && hours === 12) hours = 0;
-
-      const now = new Date();
-      const currentHours = now.getHours();
-      const currentMinutes = now.getMinutes();
-
-      if (hours < currentHours || (hours === currentHours && minutes <= currentMinutes)) {
-        e.time = 'La hora seleccionada ya ha pasado para el día de hoy';
-      }
-    }
+    if (!formData.time)    e.time    = 'Selecciona una hora';
     return e;
   };
 
@@ -424,50 +360,26 @@ function BookingForm() {
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) { setErrors(validationErrors); return; }
     setIsSubmitting(true);
+    await new Promise(r => setTimeout(r, 1400));
 
-    try {
-      await api.post('/appointments', {
-        service: formData.service,
-        date: formData.date,
-        time: formData.time,
-        notes: formData.notes
-      });
-      setIsSuccess(true);
-    } catch (error) {
-      console.error("Error al agendar cita en el backend:", error);
-      const errorMsg = error.response?.data?.error || 'Error al agendar la cita. Inténtalo de nuevo.';
-      setErrors({ submit: errorMsg });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    // Guardar la cita en localStorage
+    const newAppointment = {
+      id: Date.now().toString(),
+      username: user?.username || 'anonymous',
+      service: formData.service,
+      date: formData.date,
+      time: formData.time,
+      notes: formData.notes,
+      status: 'CONFIRMED',
+      createdAt: new Date().toISOString()
+    };
 
-  const handleDownloadPDF = async () => {
-    setPdfLoading(true);
-    setPdfStatus('Conectando con la API de PDFShift...');
-    setPdfError(false);
+    const existingAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+    existingAppointments.push(newAppointment);
+    localStorage.setItem('appointments', JSON.stringify(existingAppointments));
 
-    try {
-      const pdfBlob = await generateAppointmentPDF({
-        clientName: user?.fullName || 'Cliente',
-        service: formData.service,
-        date: formData.date,
-        time: formData.time,
-        notes: formData.notes,
-        email: user?.email || '',
-      });
-
-      const filename = `cita_${formData.service.replace(/\s+/g, '_')}_${formData.date}.pdf`;
-      downloadBlob(pdfBlob, filename);
-
-      setPdfStatus('¡PDF descargado exitosamente!');
-    } catch (err) {
-      console.error('Error generando PDF:', err);
-      setPdfError(true);
-      setPdfStatus(err.message);
-    } finally {
-      setPdfLoading(false);
-    }
+    setIsSubmitting(false);
+    setIsSuccess(true);
   };
 
   return (
@@ -484,23 +396,13 @@ function BookingForm() {
             <SuccessDetail>
               Te enviaremos una confirmación a <strong>{user?.email}</strong>.
             </SuccessDetail>
-            <ButtonsRow>
-              <DownloadPdfButton onClick={handleDownloadPDF} disabled={pdfLoading}>
-                {pdfLoading ? (
-                  <><i className="fas fa-spinner fa-spin"></i> Generando PDF...</>
-                ) : (
-                  <><i className="fas fa-file-pdf"></i> Descargar Confirmación PDF</>
-                )}
-              </DownloadPdfButton>
-              {pdfStatus && <PdfStatusText $error={pdfError}>{pdfStatus}</PdfStatusText>}
-              <BackButton onClick={() => window.history.back()}>Volver</BackButton>
-            </ButtonsRow>
+            <BackButton onClick={() => window.history.back()}>Volver</BackButton>
           </SuccessWrapper>
         ) : (
           <>
-            <Badge>María Bonita · Reservas</Badge>
+            <Badge>Essence De Toi · Reservas</Badge>
             <Title>Agendar una Cita</Title>
-            <Subtitle>Reserva tu momento de belleza en pocos pasos</Subtitle>
+            <Subtitle>Reserva tu momento de bienestar en pocos pasos</Subtitle>
             <Divider />
 
             <Form onSubmit={handleSubmit} noValidate>

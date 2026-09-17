@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '../../styles/theme';
-import api from '../../services/api';
-
 
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -96,7 +94,7 @@ const SearchInput = styled.input`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 2rem;
 `;
 
@@ -328,43 +326,43 @@ const SubmitBtn = styled.button`
 const sampleServices = [
   {
     id: 1,
-    name: 'Maquillaje Social de Día',
-    description: 'Un maquillaje fresco, natural y elegante ideal para eventos de día, graduaciones o reuniones.',
+    name: 'Manicura Clásica',
+    description: 'Cuidado completo de uñas con esmalte de alta calidad',
     price: '$30.000',
     image: '/images/services/manicura_clasica.jpg'
   },
   {
     id: 2,
-    name: 'Maquillaje de Novia & Gala',
-    description: 'Maquillaje premium de alta duración con técnicas de contorneado y acabado perfecto para tu gran día.',
+    name: 'Tintura',
+    description: 'Coloración profesional con productos premium',
     price: '$150.000',
     image: '/images/services/tintura.webp'
   },
   {
     id: 3,
-    name: 'Perfilado y Diseño de Cejas',
-    description: 'Diseño personalizado de cejas con perfilado profesional según tu visagismo facial.',
+    name: 'Tratamiento Capilar',
+    description: 'Tratamiento profundo para revitalizar tu cabello',
     price: '$60.000',
     image: '/images/services/tratamiento_capilar.webp'
   },
   {
     id: 4,
-    name: 'Curso de Automaquillaje Express',
-    description: 'Aprende a destacar tus mejores facciones, técnicas de difuminado y preparación de piel.',
+    name: 'Corte de Cabello',
+    description: 'Corte profesional según tu estilo preferido',
     price: '$35.000',
     image: '/images/services/corte_dama.jpg'
   },
   {
     id: 5,
-    name: 'Maquillaje Editorial & de Moda',
-    description: 'Maquillaje artístico y creativo de alta fantasía o editorial para pasarelas y sesiones fotográficas.',
+    name: 'Peinado de Evento',
+    description: 'Peinado elegante para ocasiones especiales',
     price: '$200.000',
     image: '/images/services/peinado_evento.jpg'
   },
   {
     id: 6,
-    name: 'Lifting de Pestañas & Laminado',
-    description: 'Tratamiento para realzar la belleza natural de tus pestañas y cejas, dando volumen y definición.',
+    name: 'Pedicure',
+    description: 'Pedicure profesional para cuidar, hidratar y embellecer tus pies',
     price: '$70.000',
     image: '/images/services/pedicure.jpg'
   },
@@ -384,24 +382,24 @@ function ManageServices() {
   });
 
   useEffect(() => {
-    api.get('/services')
-      .then(response => {
-        setServices(response.data);
-      })
-      .catch(error => {
-        console.error("Error al obtener los servicios del backend:", error);
-      });
+    const stored = localStorage.getItem('services');
+    if (!stored) {
+      localStorage.setItem('services', JSON.stringify(sampleServices));
+      setServices(sampleServices);
+    } else {
+      setServices(JSON.parse(stored));
+    }
   }, []);
+
+  const saveServices = (updated) => {
+    localStorage.setItem('services', JSON.stringify(updated));
+    setServices(updated);
+  };
 
   const handleDelete = (id, name) => {
     if (window.confirm(`¿Estás seguro de que deseas eliminar el servicio "${name}"?`)) {
-      api.delete(`/services/${id}`)
-        .then(() => {
-          setServices(prev => prev.filter(s => s.id !== id));
-        })
-        .catch(err => {
-          console.error("Error al eliminar el servicio:", err);
-        });
+      const updated = services.filter(s => s.id !== id);
+      saveServices(updated);
     }
   };
 
@@ -429,44 +427,34 @@ function ManageServices() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    // Validar formato de precio
-    const priceRegex = /^\$\d{1,3}(\.\d{3})*$/;
-    if (!priceRegex.test(formData.price)) {
-      alert('El precio debe comenzar con "$" y usar puntos para miles. Ejemplo: $35.000');
-      return;
-    }
-
-    const payload = {
-      name: formData.name,
-      description: formData.description,
-      price: formData.price,
-      image: formData.image || null
-    };
-
     if (editingService) {
       // Edit
-      api.put(`/services/${editingService.id}`, payload)
-        .then(response => {
-          setServices(prev => prev.map(s => s.id === editingService.id ? response.data : s));
-          setIsModalOpen(false);
-        })
-        .catch(err => {
-          console.error("Error al actualizar el servicio:", err);
-          alert("Error al actualizar el servicio");
-        });
+      const updated = services.map(s => {
+        if (s.id === editingService.id) {
+          return {
+            ...s,
+            name: formData.name,
+            description: formData.description,
+            price: formData.price,
+            image: formData.image || null
+          };
+        }
+        return s;
+      });
+      saveServices(updated);
     } else {
       // Add new
-      api.post('/services', payload)
-        .then(response => {
-          setServices(prev => [...prev, response.data]);
-          setIsModalOpen(false);
-        })
-        .catch(err => {
-          console.error("Error al crear el servicio:", err);
-          alert("Error al crear el servicio");
-        });
+      const nextId = services.length > 0 ? Math.max(...services.map(s => s.id)) + 1 : 1;
+      const newService = {
+        id: nextId,
+        name: formData.name,
+        description: formData.description,
+        price: formData.price,
+        image: formData.image || null
+      };
+      saveServices([...services, newService]);
     }
+    setIsModalOpen(false);
   };
 
   const filteredServices = services.filter(s => 
@@ -479,7 +467,7 @@ function ManageServices() {
       <HeaderSection>
         <TitleGroup>
           <Title>Gestionar Servicios</Title>
-          <Subtitle>Administra la oferta de servicios, maquillajes y cursos de María Bonita</Subtitle>
+          <Subtitle>Administra la oferta de tratamientos, masajes y peinados del spa</Subtitle>
         </TitleGroup>
         <ActionButton onClick={handleAddClick}>
           <i className="fas fa-plus"></i> Agregar Servicio

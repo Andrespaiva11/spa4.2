@@ -2,25 +2,25 @@ import { createGlobalStyle, keyframes } from 'styled-components';
 
 export const theme = {
   colors: {
-    primary: '#B76E79',       // Oro Rosa / Rose Gold refinado
-    primaryLight: '#D39EA7',  // Soft Rose Gold
-    primaryDark: '#8C4E58',   // Ciruela / Negro Baya elegante
-    secondary: '#FFEBF0',     // Blush rosa suave
-    accent: '#D4AF37',        // Oro Metálico sofisticado
-    text: '#2D1E20',          // Chocolate oscuro / Baya negro (Texto Principal)
-    textLight: '#3D2D30',     // Gris-baya muy oscuro (Texto Secundario)
-    textMuted: '#6D585B',     // Muted baya grisáceo (Texto Terciario)
-    contentBgLight: '#FFFDFD', // Blanco limpio con matiz rosa suave
-    contentBgWarm: '#FCF6F7',  // Crema cálida de rubor
-    navbarBg: '#1A0E10',      // Ciruela profundo oscuro (Navbar)
-    navbarText: '#EAC7CC',     // Rosa oro suave para texto en Navbar
-    navbarLinkHover: '#E5A93B', // Oro brillante para hover
-    footerBg: '#1A0E10',      // Ciruela profundo oscuro (Footer)
-    footerText: '#EAC7CC',     // Rosa oro suave para texto de footer
+    primary: '#996515',       // Marrón dorado (Encabezados)
+    primaryLight: '#b8891f',  // Dorado más claro
+    primaryDark: '#7a500f',   // Dorado más oscuro
+    secondary: '#FFB6C1',     // Rosa Pálido (Fondo Principal)
+    accent: '#c9942a',        // Dorado cálido (Acentos/Botones)
+    text: '#1a1a2e',          // Casi negro azulado (Texto Principal)
+    textLight: '#010101ff',     // Gris muy oscuro (Texto Secundario)
+    textMuted: '#0d0d0eff',     // Gris oscuro sólido (Texto terciario)
+    contentBgLight: '#FFFDF8', // Crema muy suave para contenido
+    contentBgWarm: '#FFF9F0',  // Crema cálido
+    navbarBg: '#0a0a0a',      // Negro profundo (Navbar)
+    navbarText: '#c9942a',     // Dorado para texto en Navbar
+    navbarLinkHover: '#FFD700', // Dorado brillante para hover
+    footerBg: '#0a0a0a',      // Negro profundo (Footer)
+    footerText: '#c9942a',     // Dorado para texto de footer
     danger: '#e74c3c',
     success: '#27ae60',
     cardBg: '#ffffff',
-    overlay: 'rgba(26, 14, 16, 0.65)',
+    overlay: 'rgba(10, 10, 10, 0.55)',
   },
   fonts: {
     primary: "'Cormorant Garamond', Georgia, serif",
@@ -117,54 +117,20 @@ export const GlobalStyle = createGlobalStyle`
   body {
     font-family: ${theme.fonts.secondary};
     font-size: 1.2rem;
-    background-color: #FCF6F7;
+    background-color: #FAF7F2;
     color: ${theme.colors.text};
     line-height: 1.65;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-
-    @media (max-width: 768px) {
-      font-size: 1.05rem;
-    }
   }
 
-  h1 {
-    font-size: 3.5rem;
-    @media (max-width: 768px) {
-      font-size: 2.25rem;
-    }
-  }
-  h2 {
-    font-size: 2.8rem;
-    @media (max-width: 768px) {
-      font-size: 1.85rem;
-    }
-  }
-  h3 {
-    font-size: 2.2rem;
-    @media (max-width: 768px) {
-      font-size: 1.55rem;
-    }
-  }
-  h4 {
-    font-size: 1.8rem;
-    @media (max-width: 768px) {
-      font-size: 1.35rem;
-    }
-  }
-  h5 {
-    font-size: 1.5rem;
-    @media (max-width: 768px) {
-      font-size: 1.2rem;
-    }
-  }
-  h6 {
-    font-size: 1.35rem;
-    @media (max-width: 768px) {
-      font-size: 1.1rem;
-    }
-  }
+  h1 { font-size: 3.5rem; }
+  h2 { font-size: 2.8rem; }
+  h3 { font-size: 2.2rem; }
+  h4 { font-size: 1.8rem; }
+  h5 { font-size: 1.5rem; }
+  h6 { font-size: 1.35rem; }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: ${theme.fonts.primary};

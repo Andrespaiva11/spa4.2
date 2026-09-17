@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '../../styles/theme';
-import api from '../../services/api';
-
 
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -276,40 +274,40 @@ const sampleAppointments = [
   {
     id: '1',
     username: 'maria_g',
-    service: 'Maquillaje Social de Día',
+    service: 'Manicura Clásica',
     date: '2026-05-21',
     time: '10:00 AM',
-    notes: 'Prefiere tonos nude y naturales',
+    notes: 'Prefiere tonos pasteles',
     status: 'CONFIRMED',
     createdAt: new Date().toISOString()
   },
   {
     id: '2',
     username: 'carlos_m',
-    service: 'Curso de Automaquillaje Express',
+    service: 'Corte de Cabello',
     date: '2026-05-21',
     time: '02:00 PM',
-    notes: 'Nivel básico, quiere aprender contorno',
+    notes: 'Estilo degradado corto',
     status: 'CONFIRMED',
     createdAt: new Date().toISOString()
   },
   {
     id: '3',
     username: 'sofia_r',
-    service: 'Maquillaje de Novia & Gala',
+    service: 'Tintura',
     date: '2026-05-22',
     time: '11:00 AM',
-    notes: 'Boda civil por la tarde',
+    notes: 'Coloración rubio ceniza, requiere decoloración previa',
     status: 'CONFIRMED',
     createdAt: new Date().toISOString()
   },
   {
     id: '4',
     username: 'juan_p',
-    service: 'Perfilado y Diseño de Cejas',
+    service: 'Tratamiento Capilar',
     date: '2026-05-20',
     time: '05:00 PM',
-    notes: 'Primera vez que se realiza el perfilado',
+    notes: 'Tratamiento de hidratación profunda',
     status: 'CANCELLED',
     createdAt: new Date().toISOString()
   }
@@ -321,44 +319,39 @@ function AllAppointments() {
   const [filter, setFilter] = useState('ALL'); // ALL, CONFIRMED, CANCELLED
 
   useEffect(() => {
-    // Cargar usuarios para relacionar con nombres completos
-    api.get('/users')
-      .then(response => {
-        setUsers(response.data);
-      })
-      .catch(err => {
-        console.error("Error al obtener los usuarios del backend:", err);
-      });
+    // Load users (to match full names)
+    const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
+    setUsers(storedUsers);
 
-    // Cargar citas
-    api.get('/appointments')
-      .then(response => {
-        setAppointments(response.data);
-      })
-      .catch(err => {
-        console.error("Error al obtener las citas del backend:", err);
-      });
+    // Load appointments
+    const storedApps = localStorage.getItem('appointments');
+    if (!storedApps) {
+      localStorage.setItem('appointments', JSON.stringify(sampleAppointments));
+      setAppointments(sampleAppointments);
+    } else {
+      setAppointments(JSON.parse(storedApps));
+    }
   }, []);
 
+  const saveAppointments = (updated) => {
+    localStorage.setItem('appointments', JSON.stringify(updated));
+    setAppointments(updated);
+  };
+
   const handleStatusChange = (id, newStatus) => {
-    api.put(`/appointments/${id}/status`, { status: newStatus })
-      .then(() => {
-        setAppointments(prev => prev.map(app => app.id === id ? { ...app, status: newStatus } : app));
-      })
-      .catch(err => {
-        console.error("Error al cambiar el estado de la cita:", err);
-      });
+    const updated = appointments.map(app => {
+      if (app.id === id) {
+        return { ...app, status: newStatus };
+      }
+      return app;
+    });
+    saveAppointments(updated);
   };
 
   const handleDelete = (id) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar permanentemente el registro de esta cita?')) {
-      api.delete(`/appointments/${id}`)
-        .then(() => {
-          setAppointments(prev => prev.filter(app => app.id !== id));
-        })
-        .catch(err => {
-          console.error("Error al eliminar la cita:", err);
-        });
+      const updated = appointments.filter(app => app.id !== id);
+      saveAppointments(updated);
     }
   };
 
@@ -401,7 +394,7 @@ function AllAppointments() {
       <HeaderSection>
         <TitleGroup>
           <Title>Todas las Citas</Title>
-          <Subtitle>Panel de gestión de agendas y solicitudes de citas en María Bonita</Subtitle>
+          <Subtitle>Panel de gestión de agendas y solicitudes de citas en Essence De Toi</Subtitle>
         </TitleGroup>
       </HeaderSection>
 

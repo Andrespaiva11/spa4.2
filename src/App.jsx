@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -19,17 +19,15 @@ import ManageServices from './pages/admin/ManageServices';
 import AllAppointments from './pages/admin/AllAppointments';
 import Reports from './pages/admin/Reports';
 
-function ContactPage({ isAuthenticated }) {
-  const location = useLocation();
-
+function ContactPage() {
   useEffect(() => {
     const contactSection = document.getElementById('contact-section');
     if (contactSection) {
       contactSection.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [location]);
+  }, []);
 
-  return <Home isAuthenticated={isAuthenticated} />;
+  return <Home isAuthenticated={false} />;
 }
 
 function NewAppointmentPage({ isAuthenticated }) {
@@ -58,13 +56,6 @@ function DashboardWrapper({ user }) {
 
 function App() {
   const { user, isAuthenticated, login, logout, register } = useAuth();
-  const location = useLocation();
-
-  useEffect(() => {
-    if (location.pathname !== '/contact') {
-      window.scrollTo(0, 0);
-    }
-  }, [location.pathname]);
 
   return (
     <Routes>
@@ -80,7 +71,7 @@ function App() {
         <Route path="admin/reports" element={isAuthenticated && user?.role === 'ADMIN' ? <Reports /> : <Navigate to="/login" replace />} />
         <Route path="stylist/dashboard" element={isAuthenticated && user?.role === 'STYLIST' ? <StylistDashboard user={user} /> : <Navigate to="/login" replace />} />
         <Route path="services" element={<Services />} />
-        <Route path="contact" element={<ContactPage isAuthenticated={isAuthenticated} />} />
+        <Route path="contact" element={<ContactPage />} />
         <Route path="appointments/new" element={<NewAppointmentPage isAuthenticated={isAuthenticated} />} />
         <Route path="appointments/my" element={<MyAppointmentsPage isAuthenticated={isAuthenticated} user={user} />} />
         <Route path="profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" replace />} />

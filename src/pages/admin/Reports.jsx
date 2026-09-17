@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '../../styles/theme';
-import api from '../../services/api';
-
 
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -316,32 +314,14 @@ function Reports() {
   const [services, setServices] = useState([]);
 
   useEffect(() => {
-    // Cargar citas
-    api.get('/appointments')
-      .then(res => {
-        setAppointments(res.data);
-      })
-      .catch(err => {
-        console.error("Error al obtener las citas:", err);
-      });
+    // Load from localStorage
+    const storedApps = JSON.parse(localStorage.getItem('appointments') || '[]');
+    const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
+    const storedServices = JSON.parse(localStorage.getItem('services') || '[]');
 
-    // Cargar usuarios
-    api.get('/users')
-      .then(res => {
-        setUsers(res.data);
-      })
-      .catch(err => {
-        console.error("Error al obtener los usuarios:", err);
-      });
-
-    // Cargar servicios
-    api.get('/services')
-      .then(res => {
-        setServices(res.data);
-      })
-      .catch(err => {
-        console.error("Error al obtener los servicios:", err);
-      });
+    setAppointments(storedApps);
+    setUsers(storedUsers);
+    setServices(storedServices);
   }, []);
 
   // Helper to map service name to price number
